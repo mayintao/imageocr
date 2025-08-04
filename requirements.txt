@@ -1,6 +1,6 @@
 flask
 flask-cors
-cnocr==2.2.4
+cnocr
 pillow
-torch==2.0.1
-torchvision==0.15.2
+torch
+torchvision
