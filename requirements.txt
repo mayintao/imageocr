@@ -3,3 +3,4 @@ flask-cors
 cnocr==2.2.4
 pillow
 onnxruntime
+imghdr
