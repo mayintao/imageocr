@@ -14,7 +14,7 @@ os.makedirs(RESULT_FOLDER, exist_ok=True)
 app = Flask(__name__)
 CORS(app)
 
-ocr = CnOcr()
+ocr = CnOcr(rec_model_name='densenet_lite_onnx')  # 纯 ONNX 模式
 
 @app.route("/ai/api_ocr_image", methods=["POST"])
 def api_ocr_image():
