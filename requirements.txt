@@ -1,7 +1,5 @@
 flask
 flask-cors
-cnocr
+cnocr==2.2.4
 pillow
-torch
-torchvision
 onnxruntime
