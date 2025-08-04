@@ -4,3 +4,4 @@ cnocr
 pillow
 torch
 torchvision
+onnxruntime
