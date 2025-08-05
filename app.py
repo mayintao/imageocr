@@ -2,6 +2,7 @@ from datetime import datetime
 from flask import jsonify, Flask, request
 from flask_cors import CORS
 from cnocr import CnOcr
+from PIL import Image
 import os, uuid
 
 UPLOAD_FOLDER = 'uploads'
@@ -10,7 +11,15 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app = Flask(__name__)
 CORS(app)
 
-# 初始化 CnOCR（保留 PP-OCRv5 模型）
+# 最大文件大小（字节），这里是 5MB
+MAX_FILE_SIZE = 5 * 1024 * 1024
+
+# 压缩配置
+MAX_WIDTH = 1600  # 最大宽度
+MAX_HEIGHT = 1600  # 最大高度
+JPEG_QUALITY = 85  # JPEG 压缩质量
+
+# 初始化 CnOCR
 ocr = CnOcr(
     model_name='breezedeus/cnocr-ppocr-ch_PP-OCRv5',
     det_model_name='ch_PP-OCRv5_det'
@@ -23,9 +32,20 @@ def api_ocr_image():
         return jsonify({"error": "No image provided"}), 400
 
     file = request.files['image']
+
+    # 检查文件大小
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)
+    if file_size > MAX_FILE_SIZE:
+        return jsonify({"error": f"File too large, must be <= {MAX_FILE_SIZE / 1024 / 1024} MB"}), 400
+
     uid = uuid.uuid4().hex
     filepath = os.path.join(UPLOAD_FOLDER, f"{uid}.jpg")
     file.save(filepath)
+
+    # 压缩大图片
+    compress_image(filepath)
 
     print("start time:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     response = ocr_image(filepath)
@@ -43,10 +63,28 @@ def test_local():
     if not os.path.exists(test_img_path):
         return jsonify({"error": f"本地文件不存在: {test_img_path}"}), 404
 
+    # 压缩大图片
+    compress_image(test_img_path)
+
     print("start test time:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     response = ocr_image(test_img_path)
     print("finish test time:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     return response
+
+def compress_image(image_path):
+    """压缩过大的图片，防止内存溢出"""
+    try:
+        img = Image.open(image_path)
+        img = img.convert("RGB")  # 确保是 RGB 格式
+
+        # 如果图片超过限制，等比缩放
+        if img.width > MAX_WIDTH or img.height > MAX_HEIGHT:
+            img.thumbnail((MAX_WIDTH, MAX_HEIGHT), Image.LANCZOS)
+
+        # 重新保存压缩后的图片
+        img.save(image_path, format="JPEG", quality=JPEG_QUALITY)
+    except Exception as e:
+        print(f"[WARN] 压缩图片失败: {e}")
 
 def ocr_image(image_path):
     """运行 OCR，只返回文字和坐标"""
