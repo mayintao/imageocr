@@ -3,5 +3,4 @@ flask-cors
 pillow
 onnxruntime
 cnocr
-opencv-python-headless
 numpy
